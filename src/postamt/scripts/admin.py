@@ -1,0 +1,4 @@
+"""Postamt admin."""
+import click
+
+
