@@ -17,15 +17,14 @@ def main():
 
 
 @click.group()
-@click.option('--debug/--no-debug', default=False)
-@click.option('--db', default="db.sqlite")
+@click.option('--debug/--no-debug', default=False, envvar="POSTAMT_DEBUG")
+@click.option('--db', default="db.sqlite", help="The postamt database file",
+              type=click.Path(exists=True, file_okay=True), envvar="POSTAMT_DB")
 @click.pass_context
 def cli(ctx, debug, db):
-    """Bootstrap pyramid and register exit callback."""
+    """Manage postamt sqlite database."""
 
     ctx.obj['DEBUG'] = debug
-
-
     ctx.obj['DB'] = db
 
     # relative path
@@ -36,6 +35,7 @@ def cli(ctx, debug, db):
 @cli.command()
 @click.pass_context
 def reset(ctx):
+    """Reset the whole postamt database."""
 
     if click.confirm('Really reset db?'):
         os.unlink(ctx.obj['DB'])
@@ -57,13 +57,14 @@ def reset(ctx):
 @cli.group()
 @click.pass_context
 def domain(ctx):
+    """Manage Domain table."""
     pass
 
 
 @domain.command(name="list")
 @click.pass_context
 def domain_list(ctx):
-    # just show all domains
+    """Show all domains."""
 
     domains = model.Domain.query.all()
 
@@ -79,6 +80,7 @@ def domain_list(ctx):
 @click.option("--rclass", "-r", default=None)
 @click.pass_context
 def domain_add(ctx, domain_name, active, klass, rclass):
+    """Add a new doman."""
 
     # test if already there
     try:
@@ -106,12 +108,14 @@ def domain_add(ctx, domain_name, active, klass, rclass):
 @cli.group()
 @click.pass_context
 def address(ctx):
-    pass
+    """Manage Address table."""
 
 
 @address.command(name="list")
 @click.pass_context
 def address_list(ctx):
+    """List all addresses."""
+
     addresses = model.Address.query.all()
 
     for address in addresses:
@@ -125,6 +129,7 @@ def address_list(ctx):
 @click.option("--rclass", "-r", default=30)
 @click.pass_context
 def address_add(ctx, address_name, active, transport, rclass):
+    """Add an address."""
     localpart, domain_name = address_name.split("@", 1)
 
     # domain lookup
@@ -150,12 +155,14 @@ def address_add(ctx, address_name, active, transport, rclass):
 @cli.group()
 @click.pass_context
 def alias(ctx):
-    pass
+    """Manage Alias table."""
 
 
 @alias.command(name="list")
 @click.pass_context
 def alias_list(ctx):
+    """List all aliases."""
+
     aliases = model.Alias.query.all()
 
     for alias in aliases:
@@ -168,6 +175,7 @@ def alias_list(ctx):
 @click.option("--active/--inactive", default=True)
 @click.pass_context
 def alias_add(ctx, source_address, target_address, active):
+    """Add an alias."""
 
     # domain lookup
     source_address = ctx.invoke(address_add, address_name=source_address)
@@ -192,12 +200,14 @@ def alias_add(ctx, source_address, target_address, active):
 @cli.group()
 @click.pass_context
 def user(ctx):
-    pass
+    """Manage VMailbox table."""
 
 
 @user.command(name="list")
 @click.pass_context
 def user_list(ctx):
+    """List all virtual users."""
+
     users = model.VMailbox.query.all()
 
     for user in users:
@@ -214,6 +224,8 @@ def user_list(ctx):
               confirmation_prompt=True)
 @click.pass_context
 def user_add(ctx, address_name, active, uid, gid, home, password):
+    """Add a virtual user."""
+
     address = ctx.invoke(address_add, address_name=address_name)
 
     try:
