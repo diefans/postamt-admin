@@ -6,7 +6,7 @@ Have a command line interface for managing the postamt sqlite database as it is 
 
 ## Usage
 
-``` bash
+```
 $ pip install postamt
 
 $ postamt
