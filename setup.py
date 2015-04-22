@@ -1,5 +1,7 @@
 """package setup"""
 
+__version__ = "0.0.1"
+
 import sys
 
 from setuptools import setup, find_packages
@@ -30,43 +32,37 @@ class PyTest(TestCommand):
 
 setup(
     name="Postamt",
-    version="0.0.1",
+    version=__version__,
+    author="Oliver Berger",
+    author_email="diefans@gmail.com",
+    license="Apache Version 2",
 
+    classifiers=[
+        'Development Status :: 3 - Alpha',
+        'Intended Audience :: Developers',
+        'License :: OSI Approved :: Apache Software License',
+        'Topic :: Communications :: Email',
+        'Operating System :: OS Independent',
+    ],
+    keywords="postfix dovecot sqlite",
     package_dir={'': 'src'},
     namespace_packages=['postamt'],
     packages=find_packages(
         'src',
         exclude=[]
     ),
-    entry_points="""\
-    [paste.app_factory]
-    main = postamt.app:main
+    include_package_data=True,
+    zip_safe=False,
 
+    entry_points="""\
     [console_scripts]
-    admin = postamt.scripts.admin:main
+    postamt = postamt.scripts.admin:main
     """,
 
     install_requires=[
-        # pyramid
-        "pyramid",
-
-        # server
-        "waitress",
-
-        # data
         'sqlalchemy',
-        'zope.sqlalchemy',
-
-        # crypt
-        'passlib',
-
-        # templates
-        'simplejson',
-        'ujson',
-        'pyramid_jinja2',
-
-        # nodejs
-        'nodeenv',
+        #'zope.sqlalchemy',
+        'click',
     ],
 
     cmdclass={'test': PyTest},
@@ -74,19 +70,5 @@ setup(
         # tests
         'pytest',
         'pytest-pep8',
-        'pytest-greendots',
-        'pytest-cache',
-        'pytest-cov',
-        'pytest-random',
-        'pdbpp',
-
-        # code
-        'pylint',
-        'pylama',
-        'pyflakes',
-        'pep8',
-        'pylama-pylint',
-        #'pylint-mccabe',
-
     ]
 )

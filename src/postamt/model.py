@@ -50,12 +50,14 @@ class Transport(Base):
     id = Column(Integer, primary_key=True)
     active = Column(Boolean, default=True)
     transport = Column(Text)
-    nexthop = Column(Integer)#, ForeignKey("Domain.id"))
+    nexthop_id = Column('nexthop', Integer)#, ForeignKey("Domain.id"))
+    nexthop = relation("Domain", foreign_keys="Transport.nexthop_id")
 
     # lookup mx
     mx = Column(Boolean, default=True)
 
     port = Column(Integer)
+
 
 
 class Domain(Base):
@@ -74,8 +76,14 @@ class Domain(Base):
     active = Column(Boolean, default=True)
     klass = Column('class', Integer, default=0)
     owner = Column(Integer, default=0)
-    transport = Column(Integer, ForeignKey("Transport.id"))
+    transport_id = Column('transport', Integer, ForeignKey("Transport.id"))
+    transport = relation("Transport", primaryjoin="Domain.transport_id == Transport.id")
     rclass = Column(Integer, default=30)
+
+    def __repr__(self):
+        return "{0.name}, {active}, {0.klass}, {0.rclass}"\
+            .format(self, active="active" if self.active else "inactive")
+
 
 
 class Address(Base):
@@ -93,10 +101,20 @@ class Address(Base):
 
     id = Column(Integer, primary_key=True)
     localpart = Column(Text, nullable=False)
-    domain = Column(Integer, ForeignKey("Domain.id"))
+    domain_id = Column('domain', Integer, ForeignKey("Domain.id"))
+    domain = relation("Domain")
     active = Column(Boolean, default=True)
-    transport = Column(Integer, ForeignKey("Transport.id"))
-    rclass = Column(Integer, default=30)
+    transport_id = Column('transport', Integer, ForeignKey("Transport.id"))
+    transport = relation("Transport")
+    rclass = Column(Integer, default=None, nullable=True)
+
+    @property
+    def name(self):
+        return "{0.localpart}@{0.domain.name}".format(self)
+
+    def __repr__(self):
+        return "{0.name}, {active}, {0.rclass}"\
+            .format(self, active="active" if self.active else "inactive")
 
 
 class Alias(Base):
@@ -113,10 +131,16 @@ class Alias(Base):
     __table_args__ = (UniqueConstraint("address", "target", "extension"), )
 
     id = Column(Integer, primary_key=True)
-    address = Column(Integer, ForeignKey("Address.id"), nullable=False)
+    address_id = Column('address', Integer, ForeignKey("Address.id"), nullable=False)
+    address = relation("Address", primaryjoin="Alias.address_id == Address.id")
     active = Column(Boolean, default=True)
-    target = Column(Integer, ForeignKey("Address.id"), nullable=False)
-    extension = Column(Text, nullable=False)
+    target_id = Column('target', Integer, ForeignKey("Address.id"), nullable=False)
+    target = relation("Address", primaryjoin="Alias.target_id == Address.id")
+    extension = Column(Text, nullable=True)
+
+    def __repr__(self):
+        return "{0.address.name} -> {0.target.name}, {active}"\
+            .format(self, active="active" if self.active else "inactive")
 
 
 class VMailbox(Base):
@@ -129,12 +153,17 @@ class VMailbox(Base):
 
     __tablename__ = "VMailbox"
 
-    id = Column(Integer, ForeignKey("Address.id"), primary_key=True)
+    id = Column('id', Integer, ForeignKey("Address.id"), primary_key=True)
+    address = relation("Address")
     active = Column(Boolean, default=True)
     uid = Column(Integer)
     gid = Column(Integer)
     home = Column(Text)
     password = Column(Text)
+
+    def __repr__(self):
+        return "{0.address.name}, {active}"\
+            .format(self, active="active" if self.active else "inactive")
 
 
 class BScat(Base):
@@ -151,62 +180,6 @@ class BScat(Base):
     sender = Column(Text, nullable=False)
     priority = Column(Integer, nullable=False)
     target = Column(Text, nullable=False)
-
-
-class UserUtil(object):
-    def __init__(self, registry):
-        self.password_context = registry.queryUtility(ICryptContext)
-        print "pwc", id(self), id(self.password_context)
-
-    def encrypt(self, raw_password):
-        """Encrypt a password with bcrypt."""
-
-        password = self.password_context.encrypt(raw_password.strip())
-        return unicode(password)
-
-    def verify(self, raw_password, password):
-        """Verifies the raw_password against a password hash."""
-
-        return self.password_context.verify(raw_password, password)
-
-    def verify_login(self, username, password):
-        user = User.by_name(username)
-        if user:
-            return user if self.verify(password, user.password) else None
-
-    def create_user(self, username, password, email):
-        user = User(
-            name=username,
-            password=self.encrypt(password),
-            email=email
-        )
-        DBSession.add(user)
-        DBSession.commit()
-
-        return user
-
-
-def get_user_util(request):
-    return UserUtil(request.registry)
-
-
-def create_defaults(user_util):
-
-    # basic db entries
-    admin_group = Group.query.filter(Group.name == "admin").first()
-    if not admin_group:
-        admin_group = Group(name="admin")
-
-        DBSession.add(admin_group)
-
-    user = User.by_name('foobar')
-    if not user:
-        user = user_util.create_user('foobar', "xyzwort", "diefans@gmail.com")
-        user.groups.append(admin_group)
-
-        DBSession.add(user)
-
-    DBSession.commit()
 
 
 def includeme(config):
