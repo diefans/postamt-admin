@@ -36,6 +36,7 @@ setup(
     author="Oliver Berger",
     author_email="diefans@gmail.com",
     license="Apache Version 2",
+    url="https://github.com/diefans/postamt-admin",
 
     classifiers=[
         'Development Status :: 3 - Alpha',
