@@ -1,6 +1,7 @@
 from sqlalchemy import engine_from_config
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import scoped_session, sessionmaker
+from sqlalchemy.orm.exc import NoResultFound
 #from zope.sqlalchemy import ZopeTransactionExtension
 
 import os
@@ -21,6 +22,11 @@ def initialize_sql(engine):
 
     DBSession.configure(bind=engine)
     Base.metadata.bind = engine
+
+
+def create_model(engine):
+    """Create all the model tables."""
+
     Base.metadata.create_all(engine)
 
 
@@ -51,7 +57,7 @@ class Transport(Base):
     active = Column(Boolean, default=True)
     transport = Column(Text)
     nexthop_id = Column('nexthop', Integer)#, ForeignKey("Domain.id"))
-    nexthop = relation("Domain", foreign_keys="Transport.nexthop_id")
+    nexthop = relation("Domain", backref="transports", foreign_keys="Transport.nexthop_id")
 
     # lookup mx
     mx = Column(Boolean, default=True)
@@ -84,6 +90,15 @@ class Domain(Base):
         return "{0.name}, {active}, {0.klass}, {0.rclass}"\
             .format(self, active="active" if self.active else "inactive")
 
+    @classmethod
+    def find(cls, domain_name):
+        try:
+            return cls.query\
+                .filter(cls.name == domain_name)\
+                .one()
+
+        except NoResultFound:
+            pass
 
 
 class Address(Base):
@@ -102,10 +117,10 @@ class Address(Base):
     id = Column(Integer, primary_key=True)
     localpart = Column(Text, nullable=False)
     domain_id = Column('domain', Integer, ForeignKey("Domain.id"))
-    domain = relation("Domain")
+    domain = relation("Domain", backref="addresses")
     active = Column(Boolean, default=True)
     transport_id = Column('transport', Integer, ForeignKey("Transport.id"))
-    transport = relation("Transport")
+    transport = relation("Transport", backref="addresses")
     rclass = Column(Integer, default=None, nullable=True)
 
     @property
@@ -115,6 +130,22 @@ class Address(Base):
     def __repr__(self):
         return "{0.name}, {active}, {0.rclass}"\
             .format(self, active="active" if self.active else "inactive")
+
+    @classmethod
+    def find(cls, address_name):
+        """Lookup of address by joining the domain."""
+
+        localpart, domain_name = address_name.split("@", 1)
+
+        try:
+            return cls.query\
+                .join(Domain)\
+                .filter(cls.localpart == localpart)\
+                .filter(Domain.name == domain_name)\
+                .one()
+
+        except NoResultFound:
+            pass
 
 
 class Alias(Base):
@@ -132,10 +163,10 @@ class Alias(Base):
 
     id = Column(Integer, primary_key=True)
     address_id = Column('address', Integer, ForeignKey("Address.id"), nullable=False)
-    address = relation("Address", primaryjoin="Alias.address_id == Address.id")
+    address = relation("Address", backref="sources", primaryjoin="Alias.address_id == Address.id")
     active = Column(Boolean, default=True)
     target_id = Column('target', Integer, ForeignKey("Address.id"), nullable=False)
-    target = relation("Address", primaryjoin="Alias.target_id == Address.id")
+    target = relation("Address", backref="targets", primaryjoin="Alias.target_id == Address.id")
     extension = Column(Text, nullable=True)
 
     def __repr__(self):
@@ -154,7 +185,7 @@ class VMailbox(Base):
     __tablename__ = "VMailbox"
 
     id = Column('id', Integer, ForeignKey("Address.id"), primary_key=True)
-    address = relation("Address")
+    address = relation("Address", backref="mailbox")
     active = Column(Boolean, default=True)
     uid = Column(Integer)
     gid = Column(Integer)
