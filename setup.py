@@ -37,6 +37,7 @@ setup(
     author_email="diefans@gmail.com",
     license="Apache Version 2",
     url="https://github.com/diefans/postamt-admin",
+    description="Maintain postamt sqlite db",
 
     classifiers=[
         'Development Status :: 3 - Alpha',
