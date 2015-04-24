@@ -113,13 +113,15 @@ class DomainClass(click.ParamType):
             self.fail('%s is not a valid domain class (0, 1, 2, 3, >800)' % value, param, ctx)
 
 
+RCLASSES = ["00", "01", "10", "20", "29", "30", "40", "50"]
+
+
 @domain.command(name="add")
 @click.argument("domain_name")
 @click.option("--active/--inactive", default=True)
 # TODO make class either 0, 1, 2, 3 or a number above 800
 @click.option("klass", "--class", "-c", default="virtual", type=DomainClass())
-@click.option("--rclass", "-r", default="30",
-              type=click.Choice(["00", "01", "10", "20", "29", "30", "40", "50"]))
+@click.option("--rclass", "-r", default="30", type=click.Choice(RCLASSES))
 @click.pass_context
 def domain_add(ctx, domain_name, active, klass, rclass):
     """Add a new doman."""
@@ -203,7 +205,7 @@ def address_list(ctx):
 @click.argument("address_name")
 @click.option("--active/--inactive", default=True)
 @click.option("--transport", "-t", default=None)
-@click.option("--rclass", "-r", default=30)
+@click.option("--rclass", "-r", default="30", type=click.Choice(RCLASSES))
 @click.pass_context
 def address_add(ctx, address_name, active, transport, rclass):
     """Add an address."""
