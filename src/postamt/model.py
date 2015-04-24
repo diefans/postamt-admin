@@ -193,7 +193,7 @@ class VMailbox(Base):
     password = Column(Text)
 
     def __repr__(self):
-        return "{0.address.name}, {active}"\
+        return "{0.address.name}, {active}, {0.home}"\
             .format(self, active="active" if self.active else "inactive")
 
 

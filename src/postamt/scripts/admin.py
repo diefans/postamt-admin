@@ -89,12 +89,37 @@ def domain_list(ctx):
         click.echo(domain)
 
 
+class DomainClass(click.ParamType):
+    name = 'domain class'
+    type_map = {
+        'internet': 0,
+        'local': 1,
+        'relay': 2,
+        'alias': 3,
+        'virtual': 801
+    }
+
+    def convert(self, value, param, ctx):
+
+        try:
+            if value in self.type_map:
+                return self.type_map[value]
+
+            # else it must be a number
+            elif int(value) in self.type_map.values() or int(value) > 800:
+                return int(value)
+
+        except ValueError:
+            self.fail('%s is not a valid domain class (0, 1, 2, 3, >800)' % value, param, ctx)
+
+
 @domain.command(name="add")
 @click.argument("domain_name")
 @click.option("--active/--inactive", default=True)
 # TODO make class either 0, 1, 2, 3 or a number above 800
-@click.option("klass", "--class", "-c", default=801)
-@click.option("--rclass", "-r", default=None)
+@click.option("klass", "--class", "-c", default="virtual", type=DomainClass())
+@click.option("--rclass", "-r", default="30",
+              type=click.Choice(["00", "01", "10", "20", "29", "30", "40", "50"]))
 @click.pass_context
 def domain_add(ctx, domain_name, active, klass, rclass):
     """Add a new doman."""
@@ -106,7 +131,7 @@ def domain_add(ctx, domain_name, active, klass, rclass):
         click.echo("Domain already exists: {}".format(domain_name))
 
     else:
-        domain = model.Domain(name=domain_name, active=active, klass=3, rclass=20)
+        domain = model.Domain(name=domain_name, active=active, klass=klass, rclass=rclass)
         model.DBSession.add(domain)
 
         # add default addresses
