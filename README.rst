@@ -4,7 +4,8 @@ Postamt - Admin
 Objective
 ---------
 
-Have a command line interface for managing the postamt sqlite database as it is defined in http://rob0.nodns4.us/howto/postfix-dovecot-sqlite.howto.
+Have a command line interface for managing the postamt of
+https://github.com/diefans/postamt-docker.
 
 Usage
 -----
@@ -35,3 +36,6 @@ Just call it from CLI::
 
 
 You can set ``POSTAMT_DB`` environment to point to your database.
+
+
+
